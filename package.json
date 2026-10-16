@@ -1,0 +1,1 @@
+{"name":"decoy-web","private":true,"scripts":{"test":"node --test tests/"}}
