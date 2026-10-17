@@ -66,6 +66,18 @@
     try { return JSON.parse(dec.decode(await S.decrypt({ name: 'AES-GCM', iv: unb64(o.iv) }, key, unb64(o.ct)))); }
     catch { throw new Error('Wrong passphrase or damaged backup'); }
   }
-  const api = { ITER, BLOB, WAITS, deriveKey, seal, open, createVaults, unlock, lockWait, recordFail, genPassword, exportBackup, importBackup };
+  // Four-digit entry codes (0001..9999). Stable: existing valid, unique codes are kept; others get the next free one.
+  const CODE_RE = /^\d{4}$/;
+  function nextCode(used) { for (let i = 1; i <= 9999; i++) { const c = String(i).padStart(4, '0'); if (!used.has(c)) return c; } throw new Error('No free codes left'); }
+  function ensureCodes(entries) {
+    const seen = new Set(), bad = [];
+    for (const e of entries) { if (CODE_RE.test(e.code || '') && !seen.has(e.code)) seen.add(e.code); else bad.push(e); }
+    for (const e of bad) { e.code = nextCode(seen); seen.add(e.code); }
+    return bad.length > 0;
+  }
+  // Only http(s) links are allowed (blocks javascript:, data:, etc.). Bare domains get https://.
+  function safeUrl(u) { u = String(u || '').trim(); if (!u) return ''; if (!/^[a-z][a-z0-9+.-]*:/i.test(u)) u = 'https://' + u;
+    try { const x = new URL(u); return /^https?:$/.test(x.protocol) ? x.href : ''; } catch { return ''; } }
+  const api = { CODE_RE, nextCode, ensureCodes, safeUrl, ITER, BLOB, WAITS, deriveKey, seal, open, createVaults, unlock, lockWait, recordFail, genPassword, exportBackup, importBackup };
   if (typeof module !== 'undefined') module.exports = api; else root.DecoyCore = api;
 })(this);

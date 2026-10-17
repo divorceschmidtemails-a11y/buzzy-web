@@ -53,3 +53,18 @@ test('backup export/import with separate passphrase', async () => {
   assert.deepStrictEqual(await C.importBackup('correct horse', txt), data);
   await assert.rejects(C.importBackup('wrong pass!', txt)); await assert.rejects(C.exportBackup('short', data));
 });
+
+test('four-digit codes: stable, unique, fill missing', () => {
+  const es = [{ name: 'a', code: '0002' }, { name: 'b' }, { name: 'c', code: '0002' }, { name: 'd', code: 'x1' }];
+  assert.strictEqual(C.ensureCodes(es), true);
+  assert.deepStrictEqual(es.map(e => e.code), ['0002', '0001', '0003', '0004']);
+  assert.strictEqual(C.ensureCodes(es), false);
+  assert.strictEqual(C.nextCode(new Set(es.map(e => e.code))), '0005');
+});
+
+test('safeUrl allows only http(s)', () => {
+  assert.strictEqual(C.safeUrl('example.com'), 'https://example.com/');
+  assert.strictEqual(C.safeUrl('http://a.b/x'), 'http://a.b/x');
+  assert.strictEqual(C.safeUrl('javascript:alert(1)'), '');
+  assert.strictEqual(C.safeUrl(''), '');
+});
